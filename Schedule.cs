@@ -9,6 +9,13 @@ using System.Threading.Tasks;
 [JsonObject(MemberSerialization.OptIn)]
 public class Schedule : ISchedule
 {
+    private readonly ILogger logger;
+
+    public Schedule(ILogger logger)
+    {
+        this.logger = logger;
+    }
+
     [JsonProperty]
     public ScheduleState State { get; set; } = new ScheduleState();
 
@@ -24,28 +31,28 @@ public class Schedule : ISchedule
 
     // Boilerplate (entry point for the functions runtime)
     [FunctionName(nameof(Schedule))]
-    public static Task HandleEntityOperation([EntityTrigger] IDurableEntityContext context)
+    public static Task HandleEntityOperation([EntityTrigger] IDurableEntityContext context, ILogger logger)
     {
-        return context.DispatchAsync<Schedule>();
+        return context.DispatchAsync<Schedule>(logger);
     }
 
-    public void CreateSchedule(ScheduleConfiguration scheduleCreationConfig, ILogger logger)
+    public void CreateSchedule(ScheduleConfiguration scheduleCreationConfig)
     {
         if (State.Status != ScheduleStatus.Uninitialized)
         {
             throw new InvalidOperationException("Schedule is already created.");
         }
 
-        logger.LogInformation($"Creating schedule with options: {scheduleCreationConfig}");
-
         State.ScheduleConfiguration = scheduleCreationConfig;
         TryStatusTransition(ScheduleStatus.Active);
 
         // Signal to run schedule immediately after creation
-        Entity.Current.SignalEntity(new EntityId(nameof(RunSchedule), State.ScheduleConfiguration.ScheduleId), nameof(RunSchedule), State.ExecutionToken);
+        Entity.Current.SignalEntity(Entity.Current.EntityId, nameof(RunSchedule), State.ExecutionToken);
+
+        logger.LogInformation("Schedule being created. State: {State}", JsonConvert.SerializeObject(State));
     }
 
-    public void UpdateSchedule(ScheduleConfiguration scheduleUpdateConfig, ILogger logger)
+    public void UpdateSchedule(ScheduleConfiguration scheduleUpdateConfig)
     {
         if (State.ScheduleConfiguration == null)
         {
@@ -75,10 +82,10 @@ public class Schedule : ISchedule
         State.RefreshScheduleRunExecutionToken();
 
         // Signal to run schedule immediately after update
-        Entity.Current.SignalEntity(new EntityId(nameof(RunSchedule), State.ScheduleConfiguration.ScheduleId), nameof(RunSchedule), State.ExecutionToken);
+        Entity.Current.SignalEntity(Entity.Current.EntityId, nameof(RunSchedule), State.ExecutionToken);
     }
 
-    public void PauseSchedule(ILogger logger)
+    public void PauseSchedule()
     {
         if (State.Status != ScheduleStatus.Active)
         {
@@ -92,7 +99,7 @@ public class Schedule : ISchedule
         logger.LogInformation("Schedule paused.");
     }
 
-    public void ResumeSchedule(ILogger logger)
+    public void ResumeSchedule()
     {
         if (State.ScheduleConfiguration == null)
         {
@@ -109,10 +116,10 @@ public class Schedule : ISchedule
         logger.LogInformation("Schedule resumed.");
 
         // Signal to run schedule immediately after resume
-        Entity.Current.SignalEntity(new EntityId(nameof(RunSchedule), State.ScheduleConfiguration.ScheduleId), nameof(RunSchedule), State.ExecutionToken);
+        Entity.Current.SignalEntity(Entity.Current.EntityId, nameof(RunSchedule), State.ExecutionToken);
     }
 
-    public void RunSchedule(string executionToken, ILogger logger)
+    public void RunSchedule(string executionToken)
     {
         if (State.ScheduleConfiguration == null || State.ScheduleConfiguration.Interval == null)
         {
@@ -121,7 +128,7 @@ public class Schedule : ISchedule
 
         if (executionToken != State.ExecutionToken)
         {
-            logger.LogInformation("Cancel schedule run - execution token {token} has expired", executionToken);
+            Console.WriteLine("Execution token has expired.");
             return;
         }
 
@@ -129,6 +136,9 @@ public class Schedule : ISchedule
         {
             throw new InvalidOperationException("Schedule must be in Active status to run.");
         }
+
+        // log state before running
+        logger.LogInformation("Schedule running. State: {State}", JsonConvert.SerializeObject(State));
 
         if (!State.NextRunAt.HasValue)
         {
@@ -154,7 +164,7 @@ public class Schedule : ISchedule
             State.NextRunAt = State.LastRunAt.Value + State.ScheduleConfiguration.Interval.Value;
         }
 
-        Entity.Current.SignalEntity(new EntityId(nameof(RunSchedule), State.ScheduleConfiguration.ScheduleId), State.ExecutionToken, State.NextRunAt.Value);
+        Entity.Current.SignalEntity(Entity.Current.EntityId, State.NextRunAt.Value.UtcDateTime, nameof(RunSchedule), State.ExecutionToken);
     }
 
     private void StartOrchestrationIfNotRunning()
@@ -173,47 +183,17 @@ public class Schedule : ISchedule
         State.Status = to;
     }
 
-    public void Delete(ILogger logger)
-    {
-        if (State.Status == ScheduleStatus.Deleted)
-        {
-            throw new InvalidOperationException("Schedule is already deleted.");
-        }
+    // public void Delete()
+    // {
+    //     if (State.Status == ScheduleStatus.Deleted)
+    //     {
+    //         throw new InvalidOperationException("Schedule is already deleted.");
+    //     }
 
-        TryStatusTransition(ScheduleStatus.Deleted);
-        State.NextRunAt = null;
-        State.RefreshScheduleRunExecutionToken();
-
-        logger.LogInformation("Schedule deleted.");
-    }
-
-    public void Delete()
-    {
-        Delete(null!);
-    }
-
-    public void CreateSchedule(ScheduleConfiguration scheduleCreationConfig)
-    {
-        CreateSchedule(scheduleCreationConfig, null!);
-    }
-
-    public void UpdateSchedule(ScheduleConfiguration scheduleUpdateConfig)
-    {
-        UpdateSchedule(scheduleUpdateConfig, null!);
-    }
-
-    public void PauseSchedule()
-    {
-        PauseSchedule(null!);
-    }
-
-    public void ResumeSchedule()
-    {
-        ResumeSchedule(null!);
-    }
-
-    public void RunSchedule(string executionToken)
-    {
-        RunSchedule(executionToken, null!);
-    }
+    //     TryStatusTransition(ScheduleStatus.Deleted);
+    //     State.NextRunAt = null;
+    //     State.RefreshScheduleRunExecutionToken();
+    //     Entity.Current.SetState(null);
+    //     logger.LogInformation("Schedule deleted.");
+    // }
 }

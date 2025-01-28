@@ -1,0 +1,42 @@
+### Variables
+@baseUrl = http://localhost:7071
+@scheduleId = demo-schedule-001
+
+### 1. Create a new schedule (runs every 5 minutes)
+POST {{baseUrl}}/api/CreateSchedule
+Content-Type: application/json
+
+{
+    "orchestrationName": "GenStockReportOrchestrator",
+    "scheduleId": "{{scheduleId}}",
+    "interval": "00:00:30",
+    "startImmediatelyIfLate": true
+}
+
+### 2. Update schedule (change interval to 10 minutes)
+PUT {{baseUrl}}/api/UpdateSchedule
+Content-Type: application/json
+
+{
+    "orchestrationName": "GenStockReportOrchestrator",
+    "scheduleId": "{{scheduleId}}",
+    "interval": "00:10:00"
+}
+
+### 3. Pause the schedule
+POST {{baseUrl}}/api/PauseSchedule?scheduleId={{scheduleId}}
+
+### 4. Resume the schedule
+POST {{baseUrl}}/api/ResumeSchedule?scheduleId={{scheduleId}}
+
+### 5. Delete the schedule
+DELETE {{baseUrl}}/api/DeleteSchedule?scheduleId={{scheduleId}}
+
+### Notes:
+# This file can be used with VS Code's REST Client extension
+# Each request is separated by '###'
+# Variables at the top can be modified to change base URL and schedule ID
+# To execute a request:
+# 1. Click 'Send Request' above each request, or
+# 2. Use keyboard shortcut (Ctrl+Alt+R on Windows/Linux, Cmd+Alt+R on macOS)
+# Make sure Azure Functions host is running before sending requests

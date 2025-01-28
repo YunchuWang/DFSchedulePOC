@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 public interface ISchedule
 {
     void CreateSchedule(ScheduleConfiguration scheduleCreationConfig);
@@ -5,4 +7,5 @@ public interface ISchedule
     void PauseSchedule();
     void ResumeSchedule();
     void RunSchedule(string executionToken);
+    // void Delete();
 }

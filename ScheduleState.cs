@@ -1,19 +1,26 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
+[JsonObject(MemberSerialization.OptIn)]
 public class ScheduleState
 {
+    [JsonProperty]
     internal ScheduleStatus Status { get; set; } = ScheduleStatus.Uninitialized;
 
+    [JsonProperty]
     internal string ExecutionToken { get; set; } = Guid.NewGuid().ToString("N");
 
+    [JsonProperty]
     internal DateTimeOffset? LastRunAt { get; set; }
 
+    [JsonProperty]
     internal DateTimeOffset? NextRunAt { get; set; }
 
+    [JsonProperty]
     internal ScheduleConfiguration? ScheduleConfiguration { get; set; }
 
     public HashSet<string> UpdateConfig(ScheduleConfiguration scheduleUpdateConfig)

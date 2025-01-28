@@ -4,6 +4,7 @@
 using Newtonsoft.Json;
 using System;
 
+[JsonObject(MemberSerialization.OptIn)]
 public class ScheduleConfiguration
 {
     public ScheduleConfiguration(string orchestrationName, string scheduleId)
@@ -17,7 +18,10 @@ public class ScheduleConfiguration
         this.Version++;
     }
 
+    [JsonProperty]
     private string orchestrationName = string.Empty;
+
+    [JsonProperty]
     private string scheduleId = string.Empty;
 
     public string OrchestrationName
@@ -46,14 +50,19 @@ public class ScheduleConfiguration
         }
     }
 
+    [JsonProperty]
     public string? OrchestrationInput { get; set; }
 
+    [JsonProperty]
     public string? OrchestrationInstanceId { get; set; } = Guid.NewGuid().ToString("N");
 
+    [JsonProperty]
     public DateTimeOffset? StartAt { get; set; }
 
+    [JsonProperty]
     public DateTimeOffset? EndAt { get; set; }
 
+    [JsonProperty]
     TimeSpan? interval;
 
     public TimeSpan? Interval
@@ -80,12 +89,16 @@ public class ScheduleConfiguration
         }
     }
 
+    [JsonProperty]
     public string? CronExpression { get; set; }
 
+    [JsonProperty]
     public int MaxOccurrence { get; set; }
 
+    [JsonProperty]
     public bool? StartImmediatelyIfLate { get; set; }
 
+    [JsonProperty]
     internal int Version { get; set; } // Tracking schedule config version
 }
 

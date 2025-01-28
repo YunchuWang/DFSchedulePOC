@@ -46,7 +46,7 @@ namespace DFSchedulePOC
             ILogger log)
         {
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            
+
             if (string.IsNullOrEmpty(requestBody))
             {
                 return new BadRequestObjectResult("Request body is required");
@@ -71,7 +71,7 @@ namespace DFSchedulePOC
             ILogger log)
         {
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            
+
             if (string.IsNullOrEmpty(requestBody))
             {
                 return new BadRequestObjectResult("Request body is required");
@@ -143,7 +143,7 @@ namespace DFSchedulePOC
             }
 
             var entityId = new EntityId(nameof(Schedule), scheduleId);
-            await entityClient.SignalEntityAsync(entityId, "Delete");
+            await entityClient.SignalEntityAsync(entityId, "delete");
 
             return new OkObjectResult($"Schedule deletion initiated for ID: {scheduleId}");
         }
